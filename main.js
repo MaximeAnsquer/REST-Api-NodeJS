@@ -4,22 +4,19 @@ let bodyParser = require('body-parser');
 
 let app = express();
 
-app.use(bodyParser.json()); // support json encoded bodies
-app.use(bodyParser.urlencoded({extended: true})); // support encoded bodies
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
 
 mongoose.connect('mongodb://127.0.0.1/myDatabase');
 let db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
     console.log("Connection réussie.");
-    let contactSchema = mongoose.Schema(
-        {
-            first_name: String,
-            last_name: String
-        },
-        {
-            versionKey: false  //hides the "__v" attribute
-        });
+    let model = {
+        first_name: String,
+        last_name: String
+    };
+    let contactSchema = mongoose.Schema(model, {versionKey: false});
     let ContactModel = mongoose.model('contact', contactSchema);
 
     function addContact(first_name, last_name) {
@@ -28,23 +25,17 @@ db.once('open', function () {
             "last_name": last_name
         });
         contact.save();
-        return JSON.stringify(
-            {
-                "first_name": first_name,
-                "last_name": last_name,
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://localhost:3000/contacts/" + contact.id
-                    }
-                ]
-            },
-            null, 2
-        );
-    }
-
-    function deleteContact(target_id) {
-        return ContactModel.findOne({_id: target_id}).remove().exec();
+        let returnedData = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "http://localhost:3000/contacts/" + contact.id
+                }
+            ]
+        };
+        return JSON.stringify(returnedData, null, 2);
     }
 
     app.get('/contacts', (req, res) => {
@@ -69,6 +60,18 @@ db.once('open', function () {
     app.delete('/contacts/:id', (req, res) => {
         ContactModel.remove({_id: req.params.id}, (err, removeResult) => {
             let status = removeResult.result.n ? 204 : 404;
+            res.status(status).send();
+        });
+    });
+
+    app.put('/contacts/:id', (req, res) => {
+        let query = {'_id': req.params.id};
+        let newData = {
+            "first_name": req.body.first_name,
+            "last_name": req.body.last_name
+        };
+        ContactModel.findOneAndUpdate(query, newData, {upsert: true}, function(err, doc) {
+            let status = err ? 404 : 204;
             res.status(status).send();
         });
     });
