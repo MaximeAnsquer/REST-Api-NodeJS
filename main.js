@@ -9,33 +9,22 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 mongoose.connect('mongodb://127.0.0.1/myDatabase');
 let db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
-    console.log("Connection réussie.");
+    console.log('Connection réussie.');
     let model = {
-        first_name: String,
-        last_name: String
+        firstName: String,
+        lastName: String
     };
     let contactSchema = mongoose.Schema(model, {versionKey: false});
     let ContactModel = mongoose.model('contact', contactSchema);
 
-    function addContact(first_name, last_name) {
+    function addContact(firstName, lastName) {
         let contact = new ContactModel({
-            "first_name": first_name,
-            "last_name": last_name
+            'firstName': firstName,
+            'lastName': lastName
         });
         contact.save();
-        let returnedData = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "links": [
-                {
-                    "rel": "self",
-                    "href": "http://localhost:3000/contacts/" + contact.id
-                }
-            ]
-        };
-        return JSON.stringify(returnedData, null, 2);
+        return contact;
     }
 
     app.get('/contacts', (req, res) => {
@@ -48,13 +37,28 @@ db.once('open', function () {
     app.get('/contacts/:id', (req, res) => {
         ContactModel.findOne({_id: req.params.id}).exec((err, result) => {
             res.setHeader('Content-Type', 'application/json');
-            result ? res.status(200).send(JSON.stringify(result, null, 2)) : res.status(404).send();
+            if (result) {
+                res.status(200).send(JSON.stringify(result, null, 2));
+            } else {
+                res.status(404).send();
+            }
         });
     });
 
     app.post('/contacts', (req, res) => {
         res.setHeader('Content-Type', 'application/json');
-        res.status(201).send(addContact(req.body.first_name, req.body.last_name));
+        let contact = addContact(req.body.firstName, req.body.lastName);
+        let returnedData = {
+            'firstName': req.body.firstName,
+            'lastName': req.body.lastName,
+            'links': [
+                {
+                    'rel': 'self',
+                    'href': 'http://localhost:3000/contacts/' + contact.id
+                }
+            ]
+        };
+        res.status(201).send(JSON.stringify(returnedData, null, 2));
     });
 
     app.delete('/contacts/:id', (req, res) => {
@@ -67,13 +71,42 @@ db.once('open', function () {
     app.put('/contacts/:id', (req, res) => {
         let query = {'_id': req.params.id};
         let newData = {
-            "first_name": req.body.first_name,
-            "last_name": req.body.last_name
+            'firstName': req.body.firstName,
+            'lastName': req.body.lastName
         };
-        ContactModel.findOneAndUpdate(query, newData, {upsert: true}, function(err, doc) {
+        ContactModel.findOneAndUpdate(query, newData, {upsert: true}, function( err ) {
             let status = err ? 404 : 204;
             res.status(status).send();
         });
+    });
+
+    app.post('/addFakeData', (req, res) => {
+        let fakeContacts = [
+            {
+                "firstName": "Stephen",
+                "lastName": "Mc Stephenson"
+            },
+            {
+                "lastName": "Patrick",
+                "last_name": "Balkani"
+            },
+            {
+                "firstName": "Johnny",
+                "lastName": "Depp"
+            },
+            {
+                "firstName": "Stéphanie",
+                "lastName": "De Monaco"
+            },
+            {
+                "firstName": "Jean-Émile",
+                "lastName": "Pétochard"
+            }
+        ];
+        fakeContacts.forEach(function(contact) {
+            addContact(contact.firstName, contact.lastName);
+        });
+        res.status(201).send();
     });
 
     app.listen(3000, function () {
