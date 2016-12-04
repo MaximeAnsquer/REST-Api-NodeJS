@@ -1,11 +1,15 @@
 let mongoose = require('mongoose');
 let express = require('express');
 let bodyParser = require('body-parser');
+let cors = require('cors');
 
 let app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cors());
+
+app.options('*', cors());
 
 mongoose.connect('mongodb://127.0.0.1/myDatabase');
 let db = mongoose.connection;
@@ -88,7 +92,7 @@ db.once('open', function () {
             },
             {
                 "lastName": "Patrick",
-                "last_name": "Balkani"
+                "lastName": "Balkani"
             },
             {
                 "firstName": "Johnny",
