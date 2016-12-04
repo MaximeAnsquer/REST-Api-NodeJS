@@ -91,7 +91,7 @@ db.once('open', function () {
                 "lastName": "Mc Stephenson"
             },
             {
-                "lastName": "Patrick",
+                "firstName": "Patrick",
                 "lastName": "Balkani"
             },
             {
