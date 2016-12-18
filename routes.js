@@ -3,19 +3,17 @@ let bodyParser = require('body-parser');
 let cors = require('cors');
 let ContactModel = require('./db').contactModel;
 let addContact = require('./db').addContact;
-
 let app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cors());
-
 app.options('*', cors());
 
 app.get('/contacts', (req, res) => {
-    ContactModel.find().exec((err, results) => {
+    ContactModel.find().exec((err, result) => {
         res.setHeader('Content-Type', 'application/json');
-        res.status(200).send(JSON.stringify(results, null, 2));
+        res.status(200).send(JSON.stringify(result, null, 2));
     });
 });
 
@@ -33,18 +31,7 @@ app.get('/contacts/:id', (req, res) => {
 app.post('/contacts', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     let contact = addContact(req.body.firstName, req.body.lastName, req.body.description);
-    let returnedData = {
-        'firstName': req.body.firstName,
-        'lastName': req.body.lastName,
-        'description': req.body.description,
-        'links': [
-            {
-                'rel': 'self',
-                'href': 'http://localhost:3000/contacts/' + contact.id
-            }
-        ]
-    };
-    res.status(201).send(JSON.stringify(returnedData, null, 2));
+    res.status(201).send(JSON.stringify(contact, null, 2));
 });
 
 app.delete('/contacts/:id', (req, res) => {
